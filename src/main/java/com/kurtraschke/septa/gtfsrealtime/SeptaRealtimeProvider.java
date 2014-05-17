@@ -209,7 +209,9 @@ public class SeptaRealtimeProvider {
     TripDescriptor td;
 
     try {
-      td = tripDescriptorForBlock(bus.getBlockId(), now, _busBlockMapper);
+      Calendar adjustedNow = (Calendar) now.clone();
+      adjustedNow.add(Calendar.MINUTE, -1 * bus.getOffset());
+      td = tripDescriptorForBlock(bus.getBlockId(), adjustedNow, _busBlockMapper);
     } catch (Exception e) {
       td = null;
     }
@@ -282,7 +284,9 @@ public class SeptaRealtimeProvider {
     TripDescriptor td;
 
     try {
-      td = tripDescriptorForBlock(train.getTrainNumber(), now, _railBlockMapper);
+      Calendar adjustedNow = (Calendar) now.clone();
+      adjustedNow.add(Calendar.MINUTE, -1 * train.getLate());
+      td = tripDescriptorForBlock(train.getTrainNumber(), adjustedNow, _railBlockMapper);
     } catch (Exception e) {
       td = null;
     }
