@@ -1,0 +1,9 @@
+gtfsPath.bus=google_bus.zip
+gtfsPath.rail=google_rail.zip
+
+refreshInterval.bus=60
+refreshInterval.rail=30
+
+tripUpdates.url=http://localhost:9000/tripUpdates
+vehiclePositions.url=http://localhost:9000/vehiclePositions
+alerts.url=http://localhost:9000/alerts
