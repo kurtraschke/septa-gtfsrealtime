@@ -211,7 +211,8 @@ public class SeptaRealtimeProvider {
     try {
       Calendar adjustedNow = (Calendar) now.clone();
       adjustedNow.add(Calendar.MINUTE, -1 * bus.getOffset());
-      td = tripDescriptorForBlock(bus.getBlockId(), adjustedNow, _busBlockMapper);
+      td = tripDescriptorForBlock(bus.getBlockId(), adjustedNow,
+          _busBlockMapper);
     } catch (Exception e) {
       td = null;
     }
@@ -286,7 +287,8 @@ public class SeptaRealtimeProvider {
     try {
       Calendar adjustedNow = (Calendar) now.clone();
       adjustedNow.add(Calendar.MINUTE, -1 * train.getLate());
-      td = tripDescriptorForBlock(train.getTrainNumber(), adjustedNow, _railBlockMapper);
+      td = tripDescriptorForBlock(train.getTrainNumber(), adjustedNow,
+          _railBlockMapper);
     } catch (Exception e) {
       td = null;
     }
@@ -405,7 +407,6 @@ public class SeptaRealtimeProvider {
   }
 
   private class ExpireDataTask implements Runnable {
-
     @Override
     public void run() {
       Calendar now = Calendar.getInstance();
