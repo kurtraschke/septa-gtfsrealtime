@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.kurtraschke.septa.gtfsrealtime.model.Train;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -36,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -69,13 +69,11 @@ public class TrainViewService {
         _connectionManager).build();
 
     HttpGet httpget = new HttpGet(b.build());
-    try (CloseableHttpResponse response = client.execute(httpget)) {
-      HttpEntity entity = response.getEntity();
-
+    try (CloseableHttpResponse response = client.execute(httpget);
+                        Reader responseEntityReader = new InputStreamReader(response.getEntity().getContent())) {
       JsonParser parser = new JsonParser();
 
-      JsonArray trainObjects = (JsonArray) parser.parse(new InputStreamReader(
-          entity.getContent()));
+      JsonArray trainObjects = (JsonArray) parser.parse(responseEntityReader);
 
       ArrayList<Train> allTrains = new ArrayList<>(trainObjects.size());
 
@@ -91,12 +89,10 @@ public class TrainViewService {
               trainObject.get("nextstop").getAsString(),
               trainObject.get("late").getAsInt(),
               trainObject.get("SOURCE").getAsString()));
-
         } catch (Exception e) {
           _log.warn("Exception processing train JSON", e);
           _log.warn(trainObject.toString());
         }
-
       }
       return allTrains;
     }

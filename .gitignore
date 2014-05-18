@@ -10,3 +10,4 @@ target/
 config
 dependency-reduced-pom.xml
 *~
+nbactions.xml

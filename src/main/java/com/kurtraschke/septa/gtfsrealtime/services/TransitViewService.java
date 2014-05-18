@@ -24,7 +24,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.kurtraschke.septa.gtfsrealtime.model.Bus;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -38,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,13 +72,11 @@ public class TransitViewService {
         _connectionManager).build();
 
     HttpGet httpget = new HttpGet(b.build());
-    try (CloseableHttpResponse response = client.execute(httpget)) {
-      HttpEntity entity = response.getEntity();
-
+    try (CloseableHttpResponse response = client.execute(httpget);
+                        Reader responseEntityReader = new InputStreamReader(response.getEntity().getContent())) {
       JsonParser parser = new JsonParser();
 
-      JsonObject o = (JsonObject) parser.parse(new InputStreamReader(
-          entity.getContent()));
+      JsonObject o = (JsonObject) parser.parse(responseEntityReader);
 
       JsonArray routes = (JsonArray) Iterables.getOnlyElement(o.entrySet()).getValue();
 
@@ -106,7 +104,6 @@ public class TransitViewService {
           }
         }
       }
-
       return allBuses;
     }
   }

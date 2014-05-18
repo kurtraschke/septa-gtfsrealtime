@@ -45,13 +45,13 @@ public class BlockToTripMapperService {
   private final int DAY_IN_SECONDS = 60 * 60 * 24;
   private final int AUTO_MAX_LOOK_BACK;
   private final GtfsRelationalDao _dao;
-  private final CalendarServiceData csd;
+  private final CalendarServiceData _csd;
 
   private static final Logger _log = LoggerFactory.getLogger(BlockToTripMapperService.class);
 
   public BlockToTripMapperService(GtfsRelationalDao dao) throws IOException {
     _dao = dao;
-    csd = new CalendarServiceDataFactoryImpl(dao).createData();
+    _csd = new CalendarServiceDataFactoryImpl(dao).createData();
 
     AUTO_MAX_LOOK_BACK = maxStopTime() / DAY_IN_SECONDS;
   }
@@ -97,10 +97,10 @@ public class BlockToTripMapperService {
 
       for (int i = 0; i <= maxLookBack; i++) {
         ServiceDate shifted = today.shift(-1 * i);
-        Set<AgencyAndId> activeServices = csd.getServiceIdsForDate(shifted);
+        Set<AgencyAndId> activeServices = _csd.getServiceIdsForDate(shifted);
 
         if (activeServices.contains(t.getServiceId())) {
-          Calendar origin = shifted.getAsCalendar(csd.getTimeZoneForAgencyId(theBlock.getAgencyId()));
+          Calendar origin = shifted.getAsCalendar(_csd.getTimeZoneForAgencyId(theBlock.getAgencyId()));
 
           long when = (blockActiveTime.getTimeInMillis() - origin.getTimeInMillis()) / 1000;
 

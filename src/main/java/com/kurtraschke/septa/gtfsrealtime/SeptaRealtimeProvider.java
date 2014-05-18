@@ -76,9 +76,10 @@ public class SeptaRealtimeProvider {
   private BlockToTripMapperService _busBlockMapper;
   private BlockToTripMapperService _railBlockMapper;
 
-  private HashMap<String, Calendar> _entityLastUpdate = new HashMap<>();
+  private final HashMap<String, Calendar> _entityLastUpdate = new HashMap<>();
 
-  private static final String AGENCY_ID = "SEPTA";
+  private final String AGENCY_ID = "SEPTA";
+  private final long EXPIRE_DATA_AFTER = 5 * 60 * 1000;
 
   @Inject
   @Named("refreshInterval.bus")
@@ -129,24 +130,29 @@ public class SeptaRealtimeProvider {
   }
 
   @PostConstruct
-  public void start() throws IOException {
-    _log.info("Starting GTFS-realtime service");
+  public void start() {
+    try {
+      _log.info("Starting GTFS-realtime service");
 
-    _busGtfsDao = loadGtfs(_busGtfsPath);
-    _railGtfsDao = loadGtfs(_railGtfsPath);
+      _busGtfsDao = loadGtfs(_busGtfsPath);
+      _railGtfsDao = loadGtfs(_railGtfsPath);
 
-    _busBlockMapper = new BlockToTripMapperService(_busGtfsDao);
-    _railBlockMapper = new BlockToTripMapperService(_railGtfsDao);
+      _busBlockMapper = new BlockToTripMapperService(_busGtfsDao);
+      _railBlockMapper = new BlockToTripMapperService(_railGtfsDao);
 
-    _executor = Executors.newSingleThreadScheduledExecutor();
-    _executor.scheduleWithFixedDelay(new BusRefreshTask(), 0,
-        _busRefreshInterval, TimeUnit.SECONDS);
+      _executor = Executors.newSingleThreadScheduledExecutor();
+      _executor.scheduleWithFixedDelay(new BusRefreshTask(), 0,
+              _busRefreshInterval, TimeUnit.SECONDS);
 
-    _executor.scheduleWithFixedDelay(new TrainRefreshTask(), 0,
-        _railRefreshInterval, TimeUnit.SECONDS);
+      _executor.scheduleWithFixedDelay(new TrainRefreshTask(), 0,
+              _railRefreshInterval, TimeUnit.SECONDS);
 
-    _executor.scheduleWithFixedDelay(new ExpireDataTask(), 0, 1,
-        TimeUnit.MINUTES);
+      _executor.scheduleWithFixedDelay(new ExpireDataTask(), 0, 1,
+              TimeUnit.MINUTES);
+    } catch (IOException ex) {
+      _log.error("Exception while starting GTFS-realtime service", ex);
+      throw new IllegalStateException(ex);
+    }
   }
 
   @PreDestroy
@@ -416,7 +422,7 @@ public class SeptaRealtimeProvider {
 
         long delta = now.getTimeInMillis() - lastUpdate.getTimeInMillis();
 
-        if (delta > 5 * 60 * 1000) {
+        if (delta > EXPIRE_DATA_AFTER) {
           GtfsRealtimeIncrementalUpdate griu = new GtfsRealtimeIncrementalUpdate();
           griu.addDeletedEntity(entityId);
 
