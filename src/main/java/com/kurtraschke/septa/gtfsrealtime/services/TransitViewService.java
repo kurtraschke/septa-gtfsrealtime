@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URISyntaxException;
@@ -73,12 +74,13 @@ public class TransitViewService {
 
     HttpGet httpget = new HttpGet(b.build());
     try (CloseableHttpResponse response = client.execute(httpget);
-                        Reader responseEntityReader = new InputStreamReader(response.getEntity().getContent())) {
+            InputStream responseInputStream = response.getEntity().getContent();
+            Reader responseEntityReader = new InputStreamReader(responseInputStream)) {
       JsonParser parser = new JsonParser();
 
-      JsonObject o = (JsonObject) parser.parse(responseEntityReader);
+      JsonObject root = (JsonObject) parser.parse(responseEntityReader);
 
-      JsonArray routes = (JsonArray) Iterables.getOnlyElement(o.entrySet()).getValue();
+      JsonArray routes = (JsonArray) Iterables.getOnlyElement(root.entrySet()).getValue();
 
       List<Bus> allBuses = new ArrayList<>();
 
