@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.kurtraschke.septa.gtfsrealtime.model;
 
 public class Train {
@@ -28,8 +27,8 @@ public class Train {
   private final String source;
 
   public Train(double latitude, double longitude, String trainNumber,
-      String service, String destination, String nextStop, int late,
-      String source) {
+          String service, String destination, String nextStop, int late,
+          String source) {
     this.latitude = latitude;
     this.longitude = longitude;
     this.trainNumber = trainNumber;
@@ -43,24 +42,31 @@ public class Train {
   public double getLatitude() {
     return latitude;
   }
+
   public double getLongitude() {
     return longitude;
   }
+
   public String getTrainNumber() {
     return trainNumber;
   }
+
   public String getService() {
     return service;
   }
+
   public String getDestination() {
     return destination;
   }
+
   public String getNextStop() {
     return nextStop;
   }
+
   public int getLate() {
     return late;
   }
+
   public String getSource() {
     return source;
   }
@@ -68,11 +74,8 @@ public class Train {
   @Override
   public String toString() {
     return "Train [latitude=" + latitude + ", longitude=" + longitude
-        + ", trainNumber=" + trainNumber + ", service=" + service
-        + ", destination=" + destination + ", nextStop=" + nextStop + ", late="
-        + late + ", source=" + source + "]";
+            + ", trainNumber=" + trainNumber + ", service=" + service
+            + ", destination=" + destination + ", nextStop=" + nextStop + ", late="
+            + late + ", source=" + source + "]";
   }
-
-
-
 }

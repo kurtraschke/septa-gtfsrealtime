@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.kurtraschke.septa.gtfsrealtime;
 
 import org.onebusaway.cli.CommandLineInterfaceLibrary;
@@ -33,6 +32,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.ProvisionException;
 import com.google.inject.name.Names;
 
 import org.apache.commons.cli.CommandLine;
@@ -74,8 +74,8 @@ public class SeptaRealtimeMain {
     SeptaRealtimeMain m = new SeptaRealtimeMain();
     try {
       m.run(args);
-    } catch (CreationException e) {
-      e.printStackTrace(System.err);
+    } catch (CreationException | ConfigurationException | ProvisionException e) {
+      _log.error("Error in startup:", e);
       System.exit(-1);
     }
   }
@@ -91,20 +91,17 @@ public class SeptaRealtimeMain {
   }
 
   @Inject
-  public void setVehiclePositionsExporter(@VehiclePositions
-  GtfsRealtimeExporter exporter) {
+  public void setVehiclePositionsExporter(@VehiclePositions GtfsRealtimeExporter exporter) {
     _vehiclePositionsExporter = exporter;
   }
 
   @Inject
-  public void setTripUpdatesExporter(@TripUpdates
-  GtfsRealtimeExporter exporter) {
+  public void setTripUpdatesExporter(@TripUpdates GtfsRealtimeExporter exporter) {
     _tripUpdatesExporter = exporter;
   }
 
   @Inject
-  public void setAlertsExporter(@Alerts
-  GtfsRealtimeExporter exporter) {
+  public void setAlertsExporter(@Alerts GtfsRealtimeExporter exporter) {
     _alertsExporter = exporter;
   }
 
@@ -129,16 +126,16 @@ public class SeptaRealtimeMain {
             new FileConverter(),
             new PropertiesConverter(),
             new ConfigurationModule() {
-      @Override
-      protected void bindConfigurations() {
-        bindEnvironmentVariables();
-        bindSystemProperties();
+              @Override
+              protected void bindConfigurations() {
+                bindEnvironmentVariables();
+                bindSystemProperties();
 
-        if (cli.hasOption(ARG_CONFIG_FILE)) {
-          bindProperties(new File(cli.getOptionValue(ARG_CONFIG_FILE)));
-        }
-      }
-    },
+                if (cli.hasOption(ARG_CONFIG_FILE)) {
+                  bindProperties(new File(cli.getOptionValue(ARG_CONFIG_FILE)));
+                }
+              }
+            },
             Rocoto.expandVariables(modules));
 
     _injector.injectMembers(this);
@@ -203,9 +200,8 @@ public class SeptaRealtimeMain {
 
   private void buildOptions(Options options) {
     Option configFile = new Option(ARG_CONFIG_FILE, true,
-        "configuration file path");
+            "configuration file path");
     configFile.setRequired(true);
     options.addOption(configFile);
   }
-
 }

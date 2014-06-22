@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.kurtraschke.septa.gtfsrealtime.services;
 
 import org.onebusaway.gtfs.impl.calendar.CalendarServiceDataFactoryImpl;
@@ -47,7 +46,7 @@ public class BlockToTripMapperService {
   private final GtfsRelationalDao _dao;
   private final CalendarServiceData _csd;
 
-  private static final Logger _log = LoggerFactory.getLogger(BlockToTripMapperService.class);
+  private final Logger _log = LoggerFactory.getLogger(BlockToTripMapperService.class);
 
   public BlockToTripMapperService(GtfsRelationalDao dao) throws IOException {
     _dao = dao;
@@ -84,7 +83,7 @@ public class BlockToTripMapperService {
    * @return
    */
   public ActivatedTrip mapBlockToTrip(AgencyAndId theBlock,
-      Calendar blockActiveTime, int maxLookBack) {
+          Calendar blockActiveTime, int maxLookBack) {
     Set<ActivatedTrip> trips = new HashSet<>();
 
     for (Trip t : _dao.getTripsForBlockId(theBlock)) {
@@ -112,15 +111,4 @@ public class BlockToTripMapperService {
     }
     return Iterables.getOnlyElement(trips);
   }
-
-  /*
-   * public static void main(String[] args) throws IOException {
-   * BlockToTripMapperService btms = new BlockToTripMapperService(new File(
-   * "/Users/kurt/Downloads/septa_gtfs/google_bus.zip"));
-   *
-   * GregorianCalendar now = new GregorianCalendar();
-   *
-   * System.out.println(btms.mapBlockToTrip(new AgencyAndId(AGENCY_ID, "1459"),
-   * now, btms.getAutoMaxLookBack())); }
-   */
 }

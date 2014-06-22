@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.kurtraschke.septa.gtfsrealtime;
 
 import org.onebusaway.gtfs.impl.GtfsRelationalDaoImpl;
@@ -98,20 +97,17 @@ public class SeptaRealtimeProvider {
   private File _railGtfsPath;
 
   @Inject
-  public void setVehiclePositionsSink(@VehiclePositions
-  GtfsRealtimeSink sink) {
+  public void setVehiclePositionsSink(@VehiclePositions GtfsRealtimeSink sink) {
     _vehiclePositionsSink = sink;
   }
 
   @Inject
-  public void setTripUpdateSink(@TripUpdates
-  GtfsRealtimeSink sink) {
+  public void setTripUpdateSink(@TripUpdates GtfsRealtimeSink sink) {
     _tripUpdatesSink = sink;
   }
 
   @Inject
-  public void setAlertsSink(@Alerts
-  GtfsRealtimeSink sink) {
+  public void setAlertsSink(@Alerts GtfsRealtimeSink sink) {
     _alertsSink = sink;
   }
 
@@ -171,9 +167,9 @@ public class SeptaRealtimeProvider {
   }
 
   private TripDescriptor tripDescriptorForBlock(String blockId,
-      Calendar blockActiveTime, BlockToTripMapperService blockMapper) {
+          Calendar blockActiveTime, BlockToTripMapperService blockMapper) {
     ActivatedTrip at = blockMapper.mapBlockToTrip(new AgencyAndId(AGENCY_ID,
-        blockId), blockActiveTime, blockMapper.getAutoMaxLookBack());
+            blockId), blockActiveTime, blockMapper.getAutoMaxLookBack());
 
     TripDescriptor.Builder tdb = TripDescriptor.newBuilder();
 
@@ -181,8 +177,8 @@ public class SeptaRealtimeProvider {
     tdb.setRouteId(at.getTrip().getRoute().getId().getId());
 
     tdb.setStartDate(String.format("%04d%02d%02d",
-        at.getServiceDate().getYear(), at.getServiceDate().getMonth(),
-        at.getServiceDate().getDay()));
+            at.getServiceDate().getYear(), at.getServiceDate().getMonth(),
+            at.getServiceDate().getDay()));
 
     return tdb.build();
 
@@ -191,7 +187,7 @@ public class SeptaRealtimeProvider {
   private StopTime firstStopTimeForTripId(String tripId, GtfsRelationalDao dao) {
 
     return dao.getStopTimesForTrip(
-        dao.getTripForId(new AgencyAndId(AGENCY_ID, tripId))).get(0);
+            dao.getTripForId(new AgencyAndId(AGENCY_ID, tripId))).get(0);
   }
 
   private Position positionForBus(Bus bus) {
@@ -269,7 +265,7 @@ public class SeptaRealtimeProvider {
       Calendar adjustedNow = (Calendar) now.clone();
       adjustedNow.add(Calendar.MINUTE, -1 * train.getLate());
       td = tripDescriptorForBlock(train.getTrainNumber(), adjustedNow,
-          _railBlockMapper);
+              _railBlockMapper);
     } catch (Exception e) {
       td = null;
     }
@@ -312,17 +308,17 @@ public class SeptaRealtimeProvider {
 
     if (tu.isInitialized()) {
       pushEntity(entityId, _tripUpdatesSink, tu.build(),
-          FeedEntity.TRIP_UPDATE_FIELD_NUMBER);
+              FeedEntity.TRIP_UPDATE_FIELD_NUMBER);
     }
 
     pushEntity(entityId, _vehiclePositionsSink, vp.build(),
-        FeedEntity.VEHICLE_FIELD_NUMBER);
+            FeedEntity.VEHICLE_FIELD_NUMBER);
 
     _entityLastUpdate.put(entityId, now);
   }
 
   private void pushEntity(String id, GtfsRealtimeSink sink, Object value,
-      int field) {
+          int field) {
     GtfsRealtimeIncrementalUpdate griu = new GtfsRealtimeIncrementalUpdate();
 
     FeedEntity.Builder feb = FeedEntity.newBuilder();
@@ -336,6 +332,7 @@ public class SeptaRealtimeProvider {
   }
 
   private class BusRefreshTask implements Runnable {
+
     @Override
     public void run() {
       try {
@@ -361,6 +358,7 @@ public class SeptaRealtimeProvider {
   }
 
   private class TrainRefreshTask implements Runnable {
+
     @Override
     public void run() {
       try {
@@ -376,8 +374,8 @@ public class SeptaRealtimeProvider {
             processTrain(train, now);
           } catch (Exception ex) {
             _log.warn(
-                "Exception while processing train " + train.getTrainNumber(),
-                ex);
+                    "Exception while processing train " + train.getTrainNumber(),
+                    ex);
           }
 
         }
@@ -388,6 +386,7 @@ public class SeptaRealtimeProvider {
   }
 
   private class ExpireDataTask implements Runnable {
+
     @Override
     public void run() {
       Calendar now = Calendar.getInstance();

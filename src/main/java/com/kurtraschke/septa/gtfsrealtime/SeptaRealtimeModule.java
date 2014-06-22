@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.kurtraschke.septa.gtfsrealtime;
 
 import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeExporterModule;
@@ -24,7 +23,7 @@ import com.google.inject.Module;
 
 import java.util.Set;
 
-public class SeptaRealtimeModule  extends AbstractModule {
+public class SeptaRealtimeModule extends AbstractModule {
 
   public static void addModuleAndDependencies(Set<Module> modules) {
     modules.add(new SeptaRealtimeModule());
@@ -55,5 +54,4 @@ public class SeptaRealtimeModule  extends AbstractModule {
     }
     return this.getClass().equals(o.getClass());
   }
-
 }
