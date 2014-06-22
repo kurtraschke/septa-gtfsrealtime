@@ -214,11 +214,12 @@ public class SeptaRealtimeProvider {
   private void processBus(Bus bus, Calendar now) {
     TripDescriptor td;
 
+    Calendar adjustedNow = (Calendar) now.clone();
+    adjustedNow.add(Calendar.MINUTE, -1 * bus.getOffset());
+
     try {
-      Calendar adjustedNow = (Calendar) now.clone();
-      adjustedNow.add(Calendar.MINUTE, -1 * bus.getOffset());
       td = tripDescriptorForBlock(bus.getBlockId(), adjustedNow,
-          _busBlockMapper);
+              _busBlockMapper);
     } catch (Exception e) {
       td = null;
     }
@@ -226,7 +227,6 @@ public class SeptaRealtimeProvider {
     VehicleDescriptor vd = vehicleDescriptorForBus(bus);
     Position pos = positionForBus(bus);
 
-    TripUpdate.Builder tu = TripUpdate.newBuilder();
     VehiclePosition.Builder vp = VehiclePosition.newBuilder();
 
     if (td != null) {
@@ -234,38 +234,13 @@ public class SeptaRealtimeProvider {
     }
 
     vp.setVehicle(vd);
-    vp.setTimestamp(now.getTimeInMillis() / 1000L);
+    vp.setTimestamp(adjustedNow.getTimeInMillis() / 1000L);
     vp.setPosition(pos);
-
-    if (td != null) {
-      tu.setTrip(td);
-    }
-
-    tu.setVehicle(vd);
-    tu.setTimestamp(now.getTimeInMillis() / 1000L);
-
-    if (td != null) {
-      StopTimeUpdate.Builder stub = tu.addStopTimeUpdateBuilder();
-
-      StopTime st = firstStopTimeForTripId(td.getTripId(), _busGtfsDao);
-
-      stub.setStopId(st.getStop().getId().getId());
-      stub.setStopSequence(st.getStopSequence());
-
-      StopTimeEvent.Builder steb = stub.getDepartureBuilder();
-
-      steb.setDelay(bus.getOffset() * 60);
-    }
 
     String entityId = "BUS" + bus.getVehicleId();
 
-    if (tu.isInitialized()) {
-      pushEntity(entityId, _tripUpdatesSink, tu.build(),
-          FeedEntity.TRIP_UPDATE_FIELD_NUMBER);
-    }
-
     pushEntity(entityId, _vehiclePositionsSink, vp.build(),
-        FeedEntity.VEHICLE_FIELD_NUMBER);
+            FeedEntity.VEHICLE_FIELD_NUMBER);
 
     _entityLastUpdate.put(entityId, now);
   }
