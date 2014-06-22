@@ -16,17 +16,6 @@
 
 package com.kurtraschke.septa.gtfsrealtime;
 
-import org.onebusaway.gtfs.impl.GtfsRelationalDaoImpl;
-import org.onebusaway.gtfs.model.AgencyAndId;
-import org.onebusaway.gtfs.model.StopTime;
-import org.onebusaway.gtfs.serialization.GtfsReader;
-import org.onebusaway.gtfs.services.GtfsRelationalDao;
-import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeGuiceBindingTypes.Alerts;
-import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeGuiceBindingTypes.TripUpdates;
-import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeGuiceBindingTypes.VehiclePositions;
-import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeIncrementalUpdate;
-import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeSink;
-
 import com.google.transit.realtime.GtfsRealtime.FeedEntity;
 import com.google.transit.realtime.GtfsRealtime.Position;
 import com.google.transit.realtime.GtfsRealtime.TripDescriptor;
@@ -41,10 +30,7 @@ import com.kurtraschke.septa.gtfsrealtime.model.Train;
 import com.kurtraschke.septa.gtfsrealtime.services.BlockToTripMapperService;
 import com.kurtraschke.septa.gtfsrealtime.services.TrainViewService;
 import com.kurtraschke.septa.gtfsrealtime.services.TransitViewService;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.kurtraschke.septa.gtfsrealtime.services.TrivialScheduleDeviationService;
 import java.io.File;
 import java.io.IOException;
 import java.util.Calendar;
@@ -54,11 +40,23 @@ import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
+import org.onebusaway.gtfs.impl.GtfsRelationalDaoImpl;
+import org.onebusaway.gtfs.model.AgencyAndId;
+import org.onebusaway.gtfs.model.StopTime;
+import org.onebusaway.gtfs.model.calendar.ServiceDate;
+import org.onebusaway.gtfs.serialization.GtfsReader;
+import org.onebusaway.gtfs.services.GtfsRelationalDao;
+import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeGuiceBindingTypes.Alerts;
+import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeGuiceBindingTypes.TripUpdates;
+import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeGuiceBindingTypes.VehiclePositions;
+import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeIncrementalUpdate;
+import org.onebusaway.gtfs_realtime.exporter.GtfsRealtimeSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SeptaRealtimeProvider {
 
@@ -75,6 +73,8 @@ public class SeptaRealtimeProvider {
 
   private BlockToTripMapperService _busBlockMapper;
   private BlockToTripMapperService _railBlockMapper;
+  
+  private TrivialScheduleDeviationService _sds;
 
   private final HashMap<String, Calendar> _entityLastUpdate = new HashMap<>();
 
@@ -139,6 +139,8 @@ public class SeptaRealtimeProvider {
 
       _busBlockMapper = new BlockToTripMapperService(_busGtfsDao);
       _railBlockMapper = new BlockToTripMapperService(_railGtfsDao);
+      
+      _sds = new TrivialScheduleDeviationService(_busGtfsDao);
 
       _executor = Executors.newSingleThreadScheduledExecutor();
       _executor.scheduleWithFixedDelay(new BusRefreshTask(), 0,
@@ -214,55 +216,38 @@ public class SeptaRealtimeProvider {
   private void processBus(Bus bus, Calendar now) {
     TripDescriptor td;
 
+    Calendar adjustedNow = (Calendar) now.clone();
+    adjustedNow.add(Calendar.MINUTE, -1 * bus.getOffset());
+
+    
     try {
-      Calendar adjustedNow = (Calendar) now.clone();
-      adjustedNow.add(Calendar.MINUTE, -1 * bus.getOffset());
-      td = tripDescriptorForBlock(bus.getBlockId(), adjustedNow,
-          _busBlockMapper);
+      td = tripDescriptorForBlock(bus.getBlockId(), adjustedNow, _busBlockMapper);
     } catch (Exception e) {
       td = null;
     }
 
+
     VehicleDescriptor vd = vehicleDescriptorForBus(bus);
     Position pos = positionForBus(bus);
 
-    TripUpdate.Builder tu = TripUpdate.newBuilder();
     VehiclePosition.Builder vp = VehiclePosition.newBuilder();
 
     if (td != null) {
       vp.setTrip(td);
+      
+      ActivatedTrip at = _busBlockMapper.mapBlockToTrip(new AgencyAndId(AGENCY_ID,
+        bus.getBlockId()), adjustedNow, _busBlockMapper.getAutoMaxLookBack());
+      
+      int deviation = _sds.computeDeviation(bus.getLatitude(), bus.getLongitude(), adjustedNow, at.getTrip().getId(), at.getServiceDate());
+      _log.info(bus.toString() + "\n" + "Deviation: " + deviation);
+      
     }
 
     vp.setVehicle(vd);
-    vp.setTimestamp(now.getTimeInMillis() / 1000L);
+    vp.setTimestamp(adjustedNow.getTimeInMillis() / 1000L);
     vp.setPosition(pos);
 
-    if (td != null) {
-      tu.setTrip(td);
-    }
-
-    tu.setVehicle(vd);
-    tu.setTimestamp(now.getTimeInMillis() / 1000L);
-
-    if (td != null) {
-      StopTimeUpdate.Builder stub = tu.addStopTimeUpdateBuilder();
-
-      StopTime st = firstStopTimeForTripId(td.getTripId(), _busGtfsDao);
-
-      stub.setStopId(st.getStop().getId().getId());
-      stub.setStopSequence(st.getStopSequence());
-
-      StopTimeEvent.Builder steb = stub.getDepartureBuilder();
-
-      steb.setDelay(bus.getOffset() * 60);
-    }
-
     String entityId = "BUS" + bus.getVehicleId();
-
-    if (tu.isInitialized()) {
-      pushEntity(entityId, _tripUpdatesSink, tu.build(),
-          FeedEntity.TRIP_UPDATE_FIELD_NUMBER);
-    }
 
     pushEntity(entityId, _vehiclePositionsSink, vp.build(),
         FeedEntity.VEHICLE_FIELD_NUMBER);
