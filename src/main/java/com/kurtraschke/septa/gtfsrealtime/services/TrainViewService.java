@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.kurtraschke.septa.gtfsrealtime.services;
 
 import com.google.gson.JsonArray;
@@ -48,67 +47,67 @@ import javax.inject.Singleton;
 @Singleton
 public class TrainViewService {
 
-  private Logger _log = LoggerFactory.getLogger(TrainViewService.class);
-  private HttpClientConnectionManager _connectionManager;
+    private Logger _log = LoggerFactory.getLogger(TrainViewService.class);
+    private HttpClientConnectionManager _connectionManager;
 
-  @PostConstruct
-  public void start() {
-    _connectionManager = new BasicHttpClientConnectionManager();
-  }
+    @PostConstruct
+    public void start() {
+        _connectionManager = new BasicHttpClientConnectionManager();
+    }
 
-  @PreDestroy
-  public void stop() {
-    _connectionManager.shutdown();
-  }
+    @PreDestroy
+    public void stop() {
+        _connectionManager.shutdown();
+    }
 
-  public Collection<Train> getTrains() throws URISyntaxException,
-      ClientProtocolException, IOException {
-    URIBuilder b = new URIBuilder(
-        "http://www3.septa.org/hackathon/TrainView/");
+    public Collection<Train> getTrains() throws URISyntaxException,
+            ClientProtocolException, IOException {
+        URIBuilder b = new URIBuilder(
+                "http://www3.septa.org/hackathon/TrainView/");
 
-    CloseableHttpClient client = HttpClients.custom().setConnectionManager(
-        _connectionManager).build();
+        CloseableHttpClient client = HttpClients.custom().setConnectionManager(
+                _connectionManager).build();
 
-    HttpGet httpget = new HttpGet(b.build());
-    try (CloseableHttpResponse response = client.execute(httpget);
-            InputStream responseInputStream = response.getEntity().getContent();
-            Reader responseEntityReader = new InputStreamReader(responseInputStream)) {
-      JsonParser parser = new JsonParser();
+        HttpGet httpget = new HttpGet(b.build());
+        try (CloseableHttpResponse response = client.execute(httpget);
+                InputStream responseInputStream = response.getEntity().getContent();
+                Reader responseEntityReader = new InputStreamReader(responseInputStream)) {
+            JsonParser parser = new JsonParser();
 
-      JsonArray trainObjects = (JsonArray) parser.parse(responseEntityReader);
+            JsonArray trainObjects = (JsonArray) parser.parse(responseEntityReader);
 
-      ArrayList<Train> allTrains = new ArrayList<>(trainObjects.size());
+            ArrayList<Train> allTrains = new ArrayList<>(trainObjects.size());
 
-      for (JsonElement trainElement : trainObjects) {
-        JsonObject trainObject = (JsonObject) trainElement;
+            for (JsonElement trainElement : trainObjects) {
+                JsonObject trainObject = (JsonObject) trainElement;
 
-        try {
-          allTrains.add(new Train(trainObject.get("lat").getAsDouble(),
-              trainObject.get("lon").getAsDouble(),
-              trainObject.get("trainno").getAsString(), trainObject.get(
-                  "service").getAsString(),
-              trainObject.get("dest").getAsString(),
-              trainObject.get("nextstop").getAsString(),
-              trainObject.get("late").getAsInt(),
-              trainObject.get("SOURCE").getAsString()));
-        } catch (Exception e) {
-          _log.warn("Exception processing train JSON", e);
-          _log.warn(trainObject.toString());
+                try {
+                    allTrains.add(new Train(trainObject.get("lat").getAsDouble(),
+                            trainObject.get("lon").getAsDouble(),
+                            trainObject.get("trainno").getAsString(), trainObject.get(
+                                    "service").getAsString(),
+                            trainObject.get("dest").getAsString(),
+                            trainObject.get("nextstop").getAsString(),
+                            trainObject.get("late").getAsInt(),
+                            trainObject.get("SOURCE").getAsString()));
+                } catch (Exception e) {
+                    _log.warn("Exception processing train JSON", e);
+                    _log.warn(trainObject.toString());
+                }
+            }
+            return allTrains;
         }
-      }
-      return allTrains;
-    }
-  }
-
-  public static void main(String... args) throws ClientProtocolException,
-      URISyntaxException, IOException {
-    TrainViewService tvs = new TrainViewService();
-    tvs.start();
-    for (Train t : tvs.getTrains()) {
-      System.out.println(t);
     }
 
-    tvs.stop();
-  }
+    public static void main(String... args) throws ClientProtocolException,
+            URISyntaxException, IOException {
+        TrainViewService tvs = new TrainViewService();
+        tvs.start();
+        for (Train t : tvs.getTrains()) {
+            System.out.println(t);
+        }
+
+        tvs.stop();
+    }
 
 }
